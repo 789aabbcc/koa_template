@@ -5,6 +5,8 @@ const onerror = require('koa-onerror')
 const bodyparser = require('koa-bodyparser')
 const logger = require('koa-logger')
 const cors = require("koa2-cors")
+
+const session = require('./config/session')
 // 接口地址
 const route = require('./router')
 
@@ -28,61 +30,73 @@ app.use(async (ctx, next) => {
   console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
 })
 
-// // Token拦截中间件,必须写在路由前面
-// // 不拦截接口
-// let excludeURL = [
-//   "/login",
-//   "/register"
-// ]
-// function inArray(search, Array) {
-//   for (let i in Array) {
 
-//     if (search.startsWith(Array[i])) {
-//       return true;
-//     }
-//     return false;
-//   }
-// }
+// Token拦截中间件,必须写在路由前面
+/**
+ * 设置不token检测的接口
+ */
+const excludeURL = [
+  "/login",
+  "/register"
+]
+function inArray(search, Array) {
+  for (let i in Array) {
 
-// app.use(async (ctx, next) => {
-//   let url = ctx.request.url;
-//   if (inArray(url, excludeURL)) {
-//     await next();
-//     return;
-//   }
+    if (search.startsWith(Array[i])) {
+      return true;
+    }
+    return false;
+  }
+}
 
-//   let token;
+app.use(async (ctx, next) => {
+  let url = ctx.request.url;
+  if (inArray(url, excludeURL)) {
+    await next();
+    return;
+  }
 
-//   //接收token
-//   if (ctx.request.query.token) {
-//     token = ctx.request.query.token;
-//   } else if (ctx.request.header.token) {
-//     token = ctx.request.header.token;
-//   } else {
-//     ctx.response.body = {
-//       msg: "未登录禁止访问"
-//     }
-//     return;
-//   }
+  let token;
 
-//   let data = Token.decrypt(token);
+  //接收token
+  if (ctx.request.query.token) {
+    token = ctx.request.query.token;
+  } else if (ctx.request.header.token) {
+    token = ctx.request.header.token;
+  } else {
+    ctx.response.body = {
+      msg: "未登录禁止访问"
+    }
+    return;
+  }
+
+  if (!token) {
+    ctx.body = {
+      code: -10086,
+      message: '未认证'
+    }
+    return;
+  }
+
+  // 将前端传回的token直接进行解析
+  const user_info = session[token];
+  if (!user_info || user_info.expire_in - new Date().getTime() < 0) {
+    ctx.body = {
+      code: -10010,
+      message: '非法token'
+    }
+    return;
+  }
+
+  // 请求成功，将token时间重置
+  session[token].expire_in = new Date().getTime() + 1000 * 60 * 60;
+
+  // 将解析后的token保存到ctx.user_info中，以供接口使用
+  ctx.user_info = user_info;
+  await next();
 
 
-//   if (data.token) {
-
-//     await next();
-
-//   } else {
-//     //无效token
-//     ctx.response.body = {
-//       msg: "无效token"
-//     }
-//     return;
-//   }
-
-// })
-
-
+})
 
 // routes
 app.use(route);

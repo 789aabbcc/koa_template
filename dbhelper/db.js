@@ -1,5 +1,5 @@
-/* 高并发接口测试 */
-const config = require('../config/Database');
+
+const config = require('../config/dataBase');
 // sql查询表中数据总条：SELECT COUNT(*) FROM 表名称。
 // 返回大于 20 岁的人数：
 // SELECT COUNT(*) FROM Personsinfo WHERE Age>20
@@ -16,7 +16,9 @@ exports.get_count = function (table_name, condition) {
             }
             resolve(result[0]);
             console.log(result);
+            config.release//释放链接
         })
+
     })
 }
 // 获取数据库中总数目
@@ -30,7 +32,9 @@ exports.counts = function (table_name) {
             }
             resolve(result[0]);
             console.log(result);
+            config.release//释放链接
         })
+
     })
 }
 // 条件查
@@ -50,13 +54,21 @@ exports.find = function (table_name, condition) {
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
+
     })
 }
 
 // 投影查询
 exports.find_fuzzy = function (table_name, column, condition) {
-    let sql = `SELECT ` + column + ` FROM ` + table_name + ` WHERE ` + condition;
+
+    if (arguments.length === 3) {
+        var sql = `SELECT ` + column + ` FROM ` + table_name + ` WHERE ` + condition;
+    } else {
+        var sql = `SELECT ` + column + ` FROM ` + table_name;
+    }
+
     return new Promise(function (resolve, reject) {
         config.query(sql, function (err, result) {
             if (err) {
@@ -64,7 +76,9 @@ exports.find_fuzzy = function (table_name, column, condition) {
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
+
     })
 }
 // 多表联合查询(每个必须都对应,就是每条数据都得有对应的数据)
@@ -78,7 +92,9 @@ exports.find_two = function (colunm, table_name1, table_name2, condition1, condi
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
+
     })
 }
 
@@ -92,7 +108,46 @@ exports.find_paging = function (table_name, column, condition, sort, count, star
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
+
+    })
+}
+// 模糊查询
+exports.find_like_paging1 = function (column, table_name, condition1, condition2, count, start_count) {
+
+    if (condition2 == '') {
+        var sql = `select ${column} from ${table_name} where( types = '${condition1}' ) ` + ` LIMIT ` + count + ` OFFSET ` + start_count
+
+    } else {
+        var sql = `select ${column} from ${table_name} where( title like '%${condition2}%') ` + ` LIMIT ` + count + ` OFFSET ` + start_count
+    }
+
+    return new Promise(function (resolve, reject) {
+        config.query(sql, function (err, result) {
+            if (err) {
+                reject(err);
+            }
+            resolve(result);
+            console.log(result);
+            config.release//释放链接
+        })
+
+    })
+}
+// 模糊查询
+exports.find_like_paging2 = function (column, table_name, condition1, condition2, count, start_count) {
+    let sql = `select ${column} from ${table_name} where( types = '${condition1}' AND title like '%${condition2}%') ` + ` LIMIT ` + count + ` OFFSET ` + start_count
+    return new Promise(function (resolve, reject) {
+        config.query(sql, function (err, result) {
+            if (err) {
+                reject(err);
+            }
+            resolve(result);
+            console.log(result);
+            config.release//释放链接
+        })
+
     })
 }
 
@@ -110,8 +165,10 @@ exports.update = function (table, newParams, conditions) {
                 reject(err);
             } else {
                 resolve(result);
+                config.release//释放链接
             }
         })
+
     })
 }
 
@@ -126,6 +183,7 @@ exports.delete = function (table_name, condition) {
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
     })
 }
@@ -141,6 +199,7 @@ exports.add = function (table_name, column, values) {
             }
             resolve(result);
             console.log(result);
+            config.release//释放链接
         })
     })
 }

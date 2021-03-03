@@ -21,7 +21,7 @@
     "koa-views": "^6.2.1",
     "koa2-cors": "^2.0.6",
     "mysql": "^2.18.1",
-    "pug": "^2.0.4",
+    "pug": "^3.0.1",
     "uuidv4": "^6.0.7"
   },
   "devDependencies": {
